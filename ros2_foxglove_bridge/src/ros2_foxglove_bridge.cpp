@@ -703,8 +703,8 @@ void FoxgloveBridge::clientAdvertise(const foxglove::ClientAdvertisement& advert
                      return endpoint.node_name() != this->get_name() ||
                             endpoint.node_namespace() != this->get_namespace();
                    });
-    rclcpp::QoS qos = otherPublisherIt == otherPublishers.end() ? rclcpp::SystemDefaultsQoS()
-                                                                : otherPublisherIt->qos_profile();
+    rclcpp::QoS qos =
+      otherPublisherIt == otherPublishers.end() ? rclcpp::QoS(10) : otherPublisherIt->qos_profile();
 
     // When the QoS profile is copied from another existing publisher, it can happen that the
     // history policy is Unknown, leading to an error when subsequently trying to create a publisher
