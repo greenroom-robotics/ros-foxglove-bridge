@@ -835,8 +835,8 @@ int main(int argc, char** argv) {
   nodeOptions.append_parameter_override("asset_uri_allowlist",
                                         std::vector<std::string>({"file://.*"}));
   // Configure a throttle pattern scoped to a test-only topic so other tests are unaffected.
-  nodeOptions.append_parameter_override(
-    "topic_throttle_patterns", std::vector<std::string>({"^/throttle_test_topic$"}));
+  nodeOptions.append_parameter_override("topic_throttle_patterns",
+                                        std::vector<std::string>({"^/throttle_test_topic$"}));
   nodeOptions.append_parameter_override("topic_throttle_rates", std::vector<double>({10.0}));
   foxglove_bridge::FoxgloveBridge node(nodeOptions);
   executor.add_node(node.get_node_base_interface());
