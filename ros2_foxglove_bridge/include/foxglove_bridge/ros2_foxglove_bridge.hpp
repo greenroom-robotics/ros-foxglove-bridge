@@ -82,6 +82,7 @@ private:
   std::vector<double> _topicThrottleRates;
   std::vector<std::regex> _minQosTopicPatterns;
   std::vector<int64_t> _minQosTopicDepths;
+  rclcpp::QoS _clientPublishQosDefault = rclcpp::SystemDefaultsQoS();
   std::shared_ptr<ParameterInterface> _paramInterface;
   std::unordered_map<foxglove::ChannelId, foxglove::ChannelWithoutId> _advertisedTopics;
   std::unordered_map<foxglove::ServiceId, foxglove::ServiceWithoutId> _advertisedServices;

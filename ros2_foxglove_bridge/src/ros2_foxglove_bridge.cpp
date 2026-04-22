@@ -81,6 +81,8 @@ FoxgloveBridge::FoxgloveBridge(const rclcpp::NodeOptions& options)
   _minQosTopicDepths = this->get_parameter(PARAM_MIN_QOS_TOPIC_DEPTHS).as_integer_array();
   assert(_minQosTopicPatterns.size() == _minQosTopicDepths.size() &&
          "Min qos topic patterns must each have exactly one corresponding min qos depth value.");
+  _clientPublishQosDefault =
+    qosProfileFromName(this->get_parameter(PARAM_CLIENT_PUBLISH_QOS_DEFAULT).as_string());
 
   const auto logHandler = std::bind(&FoxgloveBridge::logHandler, this, _1, _2);
   // Fetching of assets may be blocking, hence we fetch them in a separate thread.
@@ -703,7 +705,7 @@ void FoxgloveBridge::clientAdvertise(const foxglove::ClientAdvertisement& advert
                      return endpoint.node_name() != this->get_name() ||
                             endpoint.node_namespace() != this->get_namespace();
                    });
-    rclcpp::QoS qos = otherPublisherIt == otherPublishers.end() ? rclcpp::SystemDefaultsQoS()
+    rclcpp::QoS qos = otherPublisherIt == otherPublishers.end() ? _clientPublishQosDefault
                                                                 : otherPublisherIt->qos_profile();
 
     // When the QoS profile is copied from another existing publisher, it can happen that the
