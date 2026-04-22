@@ -31,23 +31,16 @@ constexpr char PARAM_TOPIC_THROTTLE_RATES[] = "topic_throttle_rates";
 constexpr char PARAM_TOPIC_THROTTLE_PATTERNS[] = "topic_throttle_patterns";
 constexpr char PARAM_MIN_QOS_TOPIC_PATTERNS[] = "min_qos_topic_patterns";
 constexpr char PARAM_MIN_QOS_TOPIC_DEPTHS[] = "min_qos_topic_depths";
-constexpr char PARAM_CLIENT_PUBLISH_QOS_DEFAULT[] = "client_publish_qos_default";
 
 constexpr int64_t DEFAULT_PORT = 8765;
 constexpr char DEFAULT_ADDRESS[] = "0.0.0.0";
 constexpr int64_t DEFAULT_SEND_BUFFER_LIMIT = 10000000;
 constexpr int64_t DEFAULT_MIN_QOS_DEPTH = 1;
 constexpr int64_t DEFAULT_MAX_QOS_DEPTH = 25;
-constexpr char DEFAULT_CLIENT_PUBLISH_QOS[] = "best_effort";
 
 void declareParameters(rclcpp::Node* node);
 
 std::vector<std::regex> parseRegexStrings(rclcpp::Node* node,
                                           const std::vector<std::string>& strings);
-
-// Maps a QoS profile name ("system_default", "default", "sensor_data", "services_default",
-// "parameters") to the corresponding rclcpp::QoS preset. Throws std::invalid_argument on
-// unknown names.
-rclcpp::QoS qosProfileFromName(const std::string& name);
 
 }  // namespace foxglove_bridge

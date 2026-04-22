@@ -229,38 +229,6 @@ void declareParameters(rclcpp::Node* node) {
   minQosTopicDepthsDescription.read_only = true;
   node->declare_parameter(PARAM_MIN_QOS_TOPIC_DEPTHS, std::vector<int64_t>(),
                           minQosTopicDepthsDescription);
-
-  auto clientPublishQosDefaultDescription = rcl_interfaces::msg::ParameterDescriptor{};
-  clientPublishQosDefaultDescription.name = PARAM_CLIENT_PUBLISH_QOS_DEFAULT;
-  clientPublishQosDefaultDescription.type = rcl_interfaces::msg::ParameterType::PARAMETER_STRING;
-  clientPublishQosDefaultDescription.description =
-    "QoS profile used when creating a publisher for a client-advertised topic that has no other "
-    "publishers on the ROS graph. One of: 'system_default', 'best_effort', "
-    "'sensor_data', 'services_default', 'parameters'.";
-  clientPublishQosDefaultDescription.read_only = true;
-  node->declare_parameter(PARAM_CLIENT_PUBLISH_QOS_DEFAULT, DEFAULT_CLIENT_PUBLISH_QOS,
-                          clientPublishQosDefaultDescription);
-}
-
-rclcpp::QoS qosProfileFromName(const std::string& name) {
-  if (name == "system_default") {
-    return rclcpp::SystemDefaultsQoS();
-  }
-  if (name == "best_effort") {
-    return rclcpp::QoS(rclcpp::KeepLast(10)).best_effort().durability_volatile();
-  }
-  if (name == "sensor_data") {
-    return rclcpp::SensorDataQoS();
-  }
-  if (name == "services_default") {
-    return rclcpp::ServicesQoS();
-  }
-  if (name == "parameters") {
-    return rclcpp::ParametersQoS();
-  }
-  throw std::invalid_argument("Unknown QoS profile name: '" + name +
-                              "'. Expected one of: system_default, best_effort, "
-                              "sensor_data, services_default, parameters.");
 }
 
 std::vector<std::regex> parseRegexStrings(rclcpp::Node* node,
