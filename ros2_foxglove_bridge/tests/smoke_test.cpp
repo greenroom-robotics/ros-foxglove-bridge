@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <filesystem>
 #include <future>
@@ -173,6 +174,69 @@ std::shared_ptr<T> deserializeMsg(const rcl_serialized_message_t* msg) {
 TEST(SmokeTest, testConnection) {
   foxglove::Client<websocketpp::config::asio_client> wsClient;
   EXPECT_EQ(std::future_status::ready, wsClient.connect(URI).wait_for(DEFAULT_TIMEOUT));
+}
+
+TEST(SmokeTest, testThrottling) {
+  // The bridge in main() is configured with topic_throttle_patterns = ["^/throttle_test_topic$"]
+  // and topic_throttle_rates = [10.0]. Publish at ~100Hz for 1s and assert the WS client receives
+  // roughly the throttled rate.
+  const std::string topic_name = "/throttle_test_topic";
+  const double throttleRateHz = 10.0;
+  const size_t millis = 1000;
+  const auto publishDuration = std::chrono::milliseconds(millis);
+  const auto publishInterval = std::chrono::milliseconds(10);
+  const size_t expected = millis / 1000 * throttleRateHz;
+
+  auto node = rclcpp::Node::make_shared("throttle_pub");
+  auto pub = node->create_publisher<std_msgs::msg::String>(topic_name, rclcpp::SystemDefaultsQoS());
+
+  auto client = std::make_shared<foxglove::Client<websocketpp::config::asio_client>>();
+  auto channelFuture = foxglove::waitForChannel(client, topic_name);
+  ASSERT_EQ(std::future_status::ready, client->connect(URI).wait_for(DEFAULT_TIMEOUT));
+  ASSERT_EQ(std::future_status::ready, channelFuture.wait_for(DEFAULT_TIMEOUT));
+  const foxglove::Channel channel = channelFuture.get();
+  const foxglove::SubscriptionId subscriptionId = 1;
+
+  std::atomic<size_t> receivedCount{0};
+  client->setBinaryMessageHandler([&receivedCount](const uint8_t* data, size_t dataLength) {
+    if (dataLength < 5) {
+      return;
+    }
+    if (foxglove::ReadUint32LE(data + 1) != 1u) {
+      return;
+    }
+    receivedCount.fetch_add(1, std::memory_order_relaxed);
+  });
+  client->subscribe({{subscriptionId, channel.id}});
+
+  // Give the bridge a moment to set up the subscription before we start publishing.
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+  std_msgs::msg::String rosMsg;
+  rosMsg.data = "tick";
+  const auto start = std::chrono::steady_clock::now();
+  size_t publishedCount = 0;
+  while (std::chrono::steady_clock::now() - start < publishDuration) {
+    pub->publish(rosMsg);
+    publishedCount++;
+    std::this_thread::sleep_for(publishInterval);
+  }
+
+  // Allow any in-flight messages to drain.
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+  client->unsubscribe({subscriptionId});
+
+  const size_t received = receivedCount.load();
+  const double publishedHz =
+    static_cast<double>(publishedCount) /
+    std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+  ASSERT_GT(publishedHz, throttleRateHz * 2)
+    << "Test publisher must outpace the throttle rate to be meaningful";
+
+  // Expect ~10 messages over 1s at 10Hz throttle
+  const size_t tolerance = 1u;
+  EXPECT_GE(received, expected - tolerance);
+  EXPECT_LE(received, expected + tolerance);
 }
 
 TEST(SmokeTest, testSubscription) {
@@ -770,6 +834,10 @@ int main(int argc, char** argv) {
   // Explicitly allow file:// asset URIs for testing purposes.
   nodeOptions.append_parameter_override("asset_uri_allowlist",
                                         std::vector<std::string>({"file://.*"}));
+  // Configure a throttle pattern scoped to a test-only topic so other tests are unaffected.
+  nodeOptions.append_parameter_override(
+    "topic_throttle_patterns", std::vector<std::string>({"^/throttle_test_topic$"}));
+  nodeOptions.append_parameter_override("topic_throttle_rates", std::vector<double>({10.0}));
   foxglove_bridge::FoxgloveBridge node(nodeOptions);
   executor.add_node(node.get_node_base_interface());
 
