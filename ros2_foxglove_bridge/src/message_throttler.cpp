@@ -16,7 +16,7 @@ std::optional<std::string> ThrottledMessage::getDecodedMessageField(const std::s
 
   std::string fieldPath = _topicInfo->topic + "/" + fieldName;
 #ifdef ROS_KILTED
-  for (auto& field : _decodedMsg.value) {
+  for (const auto& field : _decodedMsg.value) {
     if (field.second.getTypeID() != RosMsgParser::BuiltinType::STRING) {
       continue;
     }
@@ -25,7 +25,7 @@ std::optional<std::string> ThrottledMessage::getDecodedMessageField(const std::s
     }
   }
 #else
-  for (auto& field : _decodedMsg.name) {
+  for (const auto& field : _decodedMsg.name) {
     if (fieldPath == field.first.toStdString()) {
       return std::make_optional<std::string>(field.second);
     }
