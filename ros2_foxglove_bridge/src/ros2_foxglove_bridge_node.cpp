@@ -6,7 +6,8 @@ int main(int argc, char* argv[]) {
   size_t numThreads = 0;
   {
     // Temporary dummy node to get num_threads param.
-    auto dummyNode = std::make_shared<rclcpp::Node>("dummy");
+    auto dummyNode = std::make_shared<rclcpp::Node>(
+      "dummy", rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=dummy"}));
     auto numThreadsDescription = rcl_interfaces::msg::ParameterDescriptor{};
     numThreadsDescription.name = "num_threads";
     numThreadsDescription.type = rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER;
@@ -27,8 +28,10 @@ int main(int argc, char* argv[]) {
   auto executor =
     rclcpp::executors::MultiThreadedExecutor::make_shared(rclcpp::ExecutorOptions{}, numThreads);
 
-  rclcpp_components::ComponentManager componentManager(executor,
-                                                       "foxglove_bridge_component_manager");
+  rclcpp_components::ComponentManager componentManager(
+    executor, "foxglove_bridge_component_manager",
+    rclcpp::NodeOptions().arguments(
+      {"--ros-args", "-r", "__node:=foxglove_bridge_component_manager"}));
   const auto componentResources = componentManager.get_component_resources("foxglove_bridge");
 
   if (componentResources.empty()) {
